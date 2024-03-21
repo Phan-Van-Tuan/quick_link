@@ -6,6 +6,11 @@ app.use(express.json());
 
 // Định nghĩa các router
 app.get('/api/json', (req, res) => {
+    res.json({
+        "key": "value"
+    })
+});
+app.get('/api/kimtuyen', (req, res) => {
     res.send("như một trò trẻ con thì đây là web anh để giải thích cho tuyến hiểu!");
 });
 // Lắng nghe các kết nối trên cổng 3000
