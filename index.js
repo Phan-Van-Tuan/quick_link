@@ -59,8 +59,7 @@ app.post("/all", async (req, res) => {
 app.post("/short", async (req, res) => {
     console.log("HERE", req.body.origUrl);
     const { origUrl } = req.body;
-    const base = `https://quick_link.vercel.app/`;
-    // https://test-api-json.vercel.app/
+    const base = `https://quick-link-puce.vercel.app/`;
 
     const urlId = shortid.generate();
     if (validUrl.isUri(origUrl)) {
