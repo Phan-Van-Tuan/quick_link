@@ -1,19 +1,124 @@
-const express = require('express');
+const dotenv = require("dotenv");
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const shortid = require("shortid");
+const path = require("path")
+const validUrl = require('valid-url');
+const Url = require("./model");
 
-// Tạo một ứng dụng Express
+// configure dotenv
+dotenv.config();
 const app = express();
-app.use(express.json());
 
-// Định nghĩa các router
-app.get('/api/json', (req, res) => {
-    res.json({
-        "key": "value"
+// cors for cross-origin requests to the frontend application
+app.use(cors());
+// parse requests of content-type - application/json
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+
+// Database connection
+mongoose
+    .connect(process.env.MONGO_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
     })
+    .then(() => {
+        console.log(`👌Connect database successfuly...`);
+    })
+    .catch((err) => {
+        console.log(err.message);
+    });
+
+
+
+app.get('/', (req, res) => {
+    res.render('index');
 });
-app.get('/api/kimtuyen', (req, res) => {
-    res.send("như một trò trẻ con thì đây là web anh để giải thích cho tuyến hiểu!");
+
+
+// get all saved URLs 
+const secretKey = process.env.SECRET_KEY;
+app.post("/all", async (req, res) => {
+    try {
+        if (req.body.secretKey == secretKey) {
+            console.log("ok");
+            const urls = await Url.find({});
+            return res.status(200).json(urls);
+        }
+        return res.status(500).json("your secret key is wrong!!");
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json(e);
+    }
+})
+
+// URL shortener endpoint
+app.post("/short", async (req, res) => {
+    console.log("HERE", req.body.origUrl);
+    const { origUrl } = req.body;
+    const base = `https://quick_link.vercel.app/`;
+    // https://test-api-json.vercel.app/
+
+    const urlId = shortid.generate();
+    if (validUrl.isUri(origUrl)) {
+        try {
+            let url = await Url.findOne({ origUrl });
+            if (url) {
+                res.json(url);
+            } else {
+                const shortUrl = `${base}/${urlId}`;
+
+                url = new Url({
+                    origUrl,
+                    shortUrl,
+                    urlId,
+                    date: new Date(),
+                });
+
+                await url.save();
+                res.json(url);
+            }
+        } catch (err) {
+            console.log(err);
+            res.status(500).json('Server Error');
+        }
+    } else {
+        res.status(400).json('Invalid Original Url');
+    }
 });
-// Lắng nghe các kết nối trên cổng 3000
-app.listen(3000, () => {
-    console.log('Server đang chạy tại http://127.0.0.1:3000/');
+
+
+app.delete("/:urlId", async (req, res) => {
+    try {
+        await Url.findOneAndDelete({ urlId: req.params.urlId });
+        res.status(200).json("Delete okey");
+    } catch (err) {
+        console.log(err);
+        res.status(500).json("Server Error");
+    }
+});
+
+// redirect endpoint
+app.get("/:urlId", async (req, res) => {
+    try {
+        const url = await Url.findOne({ urlId: req.params.urlId });
+        console.log(url)
+        if (url) {
+            url.clicks++;
+            url.save();
+            return res.redirect(url.origUrl);
+        } else res.status(404).json("Not found");
+    } catch (err) {
+        console.log(err);
+        res.status(500).json("Server Error");
+    }
+});
+
+// Port Listenning on 3333
+const PORT = process.env.PORT || 3333;
+app.listen(PORT, () => {
+    console.log(`👌Server is running at PORT ${PORT}`);
 });
