@@ -12,7 +12,12 @@ dotenv.config();
 const app = express();
 
 // cors for cross-origin requests to the frontend application
-app.use(cors());
+app.use(cors({
+    "origin": "http://localhost:3000/",
+    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+    "preflightContinue": false,
+    "optionsSuccessStatus": 204
+}));
 // parse requests of content-type - application/json
 app.use(express.json());
 
