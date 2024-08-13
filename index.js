@@ -15,9 +15,6 @@ const app = express();
 app.use(cors());
 // parse requests of content-type - application/json
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "ejs");
 
 // Database connection
 mongoose
@@ -32,23 +29,20 @@ mongoose
         console.log(err.message);
     });
 
-
-
-app.get('/', (req, res) => {
-    res.render('index');
-});
-
+app.get("/", (req, res) => {
+    res.json('Welcom to quick link server');
+})
 
 // get all saved URLs 
 const secretKey = process.env.SECRET_KEY;
 app.post("/all", async (req, res) => {
     try {
-        if (req.body.secretKey == secretKey) {
-            console.log("ok");
+        if (req.body.secretKey === secretKey) {
+            console.log("get all url");
             const urls = await Url.find({});
             return res.status(200).json(urls);
         }
-        return res.status(500).json("your secret key is wrong!!");
+        return res.status(400).json("your secret key is wrong!!");
     } catch (e) {
         console.log(e);
         return res.status(500).json(e);
@@ -57,16 +51,16 @@ app.post("/all", async (req, res) => {
 
 // URL shortener endpoint
 app.post("/short", async (req, res) => {
-    console.log("HERE", req.body.origUrl);
+    console.log("HERE", req.body);
     const { origUrl } = req.body;
-    const base = `https://quick-link-puce.vercel.app/`;
+    const base = `https://quick-link-puce.vercel.app`;
 
     const urlId = shortid.generate();
     if (validUrl.isUri(origUrl)) {
         try {
             let url = await Url.findOne({ origUrl });
             if (url) {
-                res.json(url);
+                return res.status(200).json(url);
             } else {
                 const shortUrl = `${base}/${urlId}`;
 
@@ -78,25 +72,25 @@ app.post("/short", async (req, res) => {
                 });
 
                 await url.save();
-                res.json(url);
+                return res.status(200).json(url);
             }
         } catch (err) {
             console.log(err);
-            res.status(500).json('Server Error');
+            return res.status(500).json(err);
         }
-    } else {
-        res.status(400).json('Invalid Original Url');
     }
+    return res.status(400).json('Invalid Original Url');
 });
 
 
 app.delete("/:urlId", async (req, res) => {
     try {
-        await Url.findOneAndDelete({ urlId: req.params.urlId });
-        res.status(200).json("Delete okey");
+        console.log(req.params.urlId);
+        await Url.findOneAndDelete(req.params.urlId);
+        return res.status(200).json("Delete okey");
     } catch (err) {
         console.log(err);
-        res.status(500).json("Server Error");
+        return res.status(500).json("Server Error");
     }
 });
 
@@ -112,7 +106,7 @@ app.get("/:urlId", async (req, res) => {
         } else res.status(404).json("Not found");
     } catch (err) {
         console.log(err);
-        res.status(500).json("Server Error");
+        return res.status(500).json(err);
     }
 });
 
