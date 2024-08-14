@@ -13,7 +13,7 @@ const app = express();
 
 // cors for cross-origin requests to the frontend application
 app.use(cors({
-    "origin": "http://localhost:3000/",
+    "origin": "*",
     "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
     "preflightContinue": false,
     "optionsSuccessStatus": 204
@@ -31,6 +31,7 @@ mongoose
         console.log(err.message);
     });
 
+
 app.get("/", (req, res) => {
     res.json('Welcom to quick link server');
 })
@@ -38,6 +39,7 @@ app.get("/", (req, res) => {
 // get all saved URLs 
 const secretKey = process.env.SECRET_KEY;
 app.post("/all", async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "*")
     try {
         if (req.body.secretKey === secretKey) {
             console.log("get all url");
@@ -53,6 +55,7 @@ app.post("/all", async (req, res) => {
 
 // URL shortener endpoint
 app.post("/short", async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "*")
     console.log("HERE", req.body);
     const { origUrl } = req.body;
     const base = `https://quick-link-puce.vercel.app`;
@@ -86,6 +89,7 @@ app.post("/short", async (req, res) => {
 
 
 app.delete("/:urlId", async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "*")
     try {
         console.log(req.params.urlId);
         await Url.findOneAndDelete(req.params.urlId);
@@ -98,6 +102,7 @@ app.delete("/:urlId", async (req, res) => {
 
 // redirect endpoint
 app.get("/:urlId", async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "*")
     try {
         const url = await Url.findOne({ urlId: req.params.urlId });
         console.log(url)
